@@ -22,6 +22,8 @@ package moa.classifiers.trees;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+
+import com.yahoo.labs.samoa.instances.InstancesHeader;
 import moa.classifiers.bayes.NaiveBayes;
 import moa.classifiers.core.conditionaltests.InstanceConditionalTest;
 import moa.classifiers.core.driftdetection.ADWIN;
@@ -49,7 +51,7 @@ import com.yahoo.labs.samoa.instances.Instance;
  * @author Albert Bifet (abifet at cs dot waikato dot ac dot nz)
  * @version $Revision: 7 $
  */
-public class HoeffdingAdaptiveTree extends HoeffdingTree {
+public class HoeffdingAdaptiveTree extends HoeffdingTree implements FeatureScorer {
 
     private static final long serialVersionUID = 1L;
 
@@ -462,6 +464,7 @@ public class HoeffdingAdaptiveTree extends HoeffdingTree {
         if (this.treeRoot == null) {
             this.treeRoot = newLearningNode();
             this.activeLeafNodeCount = 1;
+            this.header = (InstancesHeader) inst.dataset();
         }
         ((NewNode) this.treeRoot).learnFromInstance(inst, this, null, -1);
     }

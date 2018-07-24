@@ -29,6 +29,7 @@ import com.github.javacliparser.FlagOption;
 import com.github.javacliparser.FloatOption;
 import com.github.javacliparser.IntOption;
 import com.github.javacliparser.MultiChoiceOption;
+import com.yahoo.labs.samoa.instances.InstancesHeader;
 import moa.AbstractMOAObject;
 import moa.classifiers.AbstractClassifier;
 import moa.classifiers.MultiClassClassifier;
@@ -93,7 +94,7 @@ import com.yahoo.labs.samoa.instances.Instance;
  * @author Richard Kirkby (rkirkby@cs.waikato.ac.nz)
  * @version $Revision: 7 $
  */
-public class HoeffdingTree extends AbstractClassifier implements MultiClassClassifier {
+public class HoeffdingTree extends AbstractClassifier implements MultiClassClassifier, FeatureScorer {
 
     private static final long serialVersionUID = 1L;
 
@@ -480,6 +481,8 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
 
     protected boolean growthAllowed;
 
+    protected InstancesHeader header;
+
     public int calcByteSize() {
         int size = (int) SizeOf.sizeOf(this);
         if (this.treeRoot != null) {
@@ -506,12 +509,14 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
         if (this.leafpredictionOption.getChosenIndex()>0) { 
             this.removePoorAttsOption = null;
         }
+        this.header = null;
     }
 
     @Override
     public void trainOnInstanceImpl(Instance inst) {
         if (this.treeRoot == null) {
             this.treeRoot = newLearningNode();
+            this.header = (InstancesHeader) inst.dataset();
             this.activeLeafNodeCount = 1;
         }
         FoundNode foundNode = this.treeRoot.filterInstanceToLeaf(inst, null, -1);
@@ -920,5 +925,24 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
             ret = new LearningNodeNBAdaptive(initialClassObservations);
         }
         return ret;
+    }
+
+    @Override
+    public double[] getFeatureScores() {
+        int maxDepth = this.measureTreeDepth();
+        double scores[] = new double[header.numAttributes() - 1];
+        obtainScore(treeRoot, 0, maxDepth, scores);
+        if(Utils.sum(scores) > 0.0) Utils.normalize(scores);
+        return scores;
+    }
+
+    public void obtainScore(Node n, int cDepth, int maxDepth, double scores[]){
+        if(n instanceof SplitNode){
+            int f = ((SplitNode) n).splitTest.getAttsTestDependsOn()[0];
+            scores[f] += (maxDepth - 1) - cDepth;
+            for(Node child : ((SplitNode) n).children) {
+                obtainScore(child, cDepth + 1, maxDepth, scores);
+            }
+        }
     }
 }

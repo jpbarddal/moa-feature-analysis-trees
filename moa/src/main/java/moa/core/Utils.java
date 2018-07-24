@@ -1900,6 +1900,59 @@ public final class Utils {
     return o;
   }
 
+  /**
+   * Expands the input array <b>a</b> so that it's size matches the input <b>size</b>.
+   * @param a
+   * @param size
+   * @return the new array
+   */
+  public static double[] expandArray(double a[], int size) {
+    double v[] = new double[size];
+    System.arraycopy(a, 0, v, 0, a.length);
+    return v;
+  }
+
+  /**
+   * Aggregates (sums) two input vectors <b>a</b> and <b>b</b>.
+   * @param a
+   * @param b
+   * @return the aggregated array
+   */
+  public static double[] aggregate(double a[], double b[]){
+    int maxLength = a.length > b.length ? a.length : b.length;
+    double agg[] = new double[maxLength];
+    if(maxLength != a.length) expandArray(a, maxLength);
+    if(maxLength != b.length) expandArray(b, maxLength);
+    for(int i = 0; i < maxLength; i++){
+      agg[i] += a[i] + b[i];
+    }
+    return agg;
+  }
+
+  /**
+   * Computes the scalar of an array <b>v</b> given the multiplier <b>s</b>.
+   * @param v
+   * @param s
+   * @return the scalar product
+   */
+  public static double[] scalar(double v[], double s){
+    double scalar[] = new double[v.length];
+    for(int i = 0; i < v.length; i++){
+      scalar[i] = v[i] * s;
+    }
+    return scalar;
+  }
+
+  /**
+   * Performs a position-wise division of an array <b>v</b> per <b>d</b>.
+   * @param v
+   * @param d
+   * @return
+   */
+  public static double[] divide(double v[], double d){
+    return scalar(v, 1.0/d);
+  }
+
 }
   
 

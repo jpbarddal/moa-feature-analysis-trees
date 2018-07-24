@@ -24,8 +24,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 
+import com.yahoo.labs.samoa.instances.Attribute;
 import moa.classifiers.Classifier;
 import moa.classifiers.MultiClassClassifier;
+import moa.classifiers.trees.FeatureScorer;
 import moa.core.Example;
 import moa.core.Measurement;
 import moa.core.ObjectRepository;
@@ -216,20 +218,39 @@ public class EvaluatePrequential extends ClassificationMainTask {
                 RAMHoursIncrement *= (timeIncrement / 3600.0); //Hours
                 RAMHours += RAMHoursIncrement;
                 lastEvaluateStartTime = evaluateTime;
+                Measurement basic[] = new Measurement[]{
+                        new Measurement(
+                                "learning evaluation instances",
+                                instancesProcessed),
+                        new Measurement(
+                                "evaluation time ("
+                                        + (preciseCPUTiming ? "cpu "
+                                        : "") + "seconds)",
+                                time),
+                        new Measurement(
+                                "model cost (RAM-Hours)",
+                                RAMHours)
+                };
+                Measurement importances[] = new Measurement[0];
+                if(learner instanceof FeatureScorer){
+                    double scores[] = ((FeatureScorer) learner).getFeatureScores();
+                    importances = new Measurement[scores.length];
+                    int pos = 0;
+                    for(int i = 0; i < stream.getHeader().numAttributes(); i++){
+                        Attribute att = stream.getHeader().attribute(i);
+                        if(att != stream.getHeader().classAttribute()){
+                            importances[pos] = new Measurement("imp. " + att.name(), scores[pos]);
+                            pos++;
+                        }
+                    }
+                }
+                Measurement metrics[] = new Measurement[basic.length + importances.length];
+                if (importances != null){
+                    System.arraycopy(basic, 0, metrics, 0, basic.length);
+                    System.arraycopy(importances, 0, metrics, basic.length, importances.length);
+                }
                 learningCurve.insertEntry(new LearningEvaluation(
-                        new Measurement[]{
-                            new Measurement(
-                            "learning evaluation instances",
-                            instancesProcessed),
-                            new Measurement(
-                            "evaluation time ("
-                            + (preciseCPUTiming ? "cpu "
-                            : "") + "seconds)",
-                            time),
-                            new Measurement(
-                            "model cost (RAM-Hours)",
-                            RAMHours)
-                        },
+                        metrics,
                         evaluator, learner));
 
                 if (immediateResultStream != null) {

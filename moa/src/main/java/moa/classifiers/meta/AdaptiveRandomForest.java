@@ -20,12 +20,11 @@ package moa.classifiers.meta;
 
 import com.yahoo.labs.samoa.instances.Instance;
 
+import com.yahoo.labs.samoa.instances.InstancesHeader;
 import moa.classifiers.AbstractClassifier;
 import moa.classifiers.MultiClassClassifier;
-import moa.core.DoubleVector;
-import moa.core.InstanceExample;
-import moa.core.Measurement;
-import moa.core.MiscUtils;
+import moa.classifiers.trees.FeatureScorer;
+import moa.core.*;
 import moa.options.ClassOption;
 
 import com.github.javacliparser.FloatOption;
@@ -80,7 +79,7 @@ import moa.classifiers.core.driftdetection.ChangeDetector;
  * @author Heitor Murilo Gomes (heitor_murilo_gomes at yahoo dot com dot br)
  * @version $Revision: 1 $
  */
-public class AdaptiveRandomForest extends AbstractClassifier implements MultiClassClassifier {
+public class AdaptiveRandomForest extends AbstractClassifier implements MultiClassClassifier, FeatureScorer {
 
     @Override
     public String getPurposeString() {
@@ -137,6 +136,7 @@ public class AdaptiveRandomForest extends AbstractClassifier implements MultiCla
     protected long instancesSeen;
     protected int subspaceSize;
     protected BasicClassificationPerformanceEvaluator evaluator;
+    protected InstancesHeader header;
 
     private ExecutorService executor;
     
@@ -147,6 +147,7 @@ public class AdaptiveRandomForest extends AbstractClassifier implements MultiCla
         this.subspaceSize = 0;
         this.instancesSeen = 0;
         this.evaluator = new BasicClassificationPerformanceEvaluator();
+        this.header = null;
         
         // Multi-threading
         int numberOfJobs;
@@ -233,6 +234,7 @@ public class AdaptiveRandomForest extends AbstractClassifier implements MultiCla
         // Init the ensemble.
         int ensembleSize = this.ensembleSizeOption.getValue();
         this.ensemble = new ARFBaseLearner[ensembleSize];
+        this.header = (InstancesHeader) instance.dataset();
         
         // TODO: this should be an option with default = BasicClassificationPerformanceEvaluator
 //        BasicClassificationPerformanceEvaluator classificationEvaluator = (BasicClassificationPerformanceEvaluator) getPreparedClassOption(this.evaluatorOption);
@@ -297,7 +299,7 @@ public class AdaptiveRandomForest extends AbstractClassifier implements MultiCla
      * Inner class that represents a single tree member of the forest. 
      * It contains some analysis information, such as the numberOfDriftsDetected, 
      */
-    protected final class ARFBaseLearner extends AbstractMOAObject {
+    protected final class ARFBaseLearner extends AbstractMOAObject implements FeatureScorer {
         public int indexOriginal;
         public long createdOn;
         public long lastDriftOn;
@@ -433,6 +435,11 @@ public class AdaptiveRandomForest extends AbstractClassifier implements MultiCla
         @Override
         public void getDescription(StringBuilder sb, int indent) {
         }
+
+        @Override
+        public double[] getFeatureScores() {
+            return this.classifier.getFeatureScores();
+        }
     }
     
     /***
@@ -462,5 +469,14 @@ public class AdaptiveRandomForest extends AbstractClassifier implements MultiCla
             run();
             return 0;
         }
+    }
+
+    @Override
+    public double[] getFeatureScores() {
+        int numTrees = this.ensemble.length;
+        double fScores[] = new double[header.numAttributes() - 1]; // except the class
+        for(int i = 0; i < numTrees; i++) fScores = Utils.aggregate(fScores, this.ensemble[i].getFeatureScores());
+        fScores = Utils.divide(fScores, numTrees);
+        return fScores;
     }
 }
