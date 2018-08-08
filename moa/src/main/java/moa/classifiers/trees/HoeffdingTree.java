@@ -164,6 +164,10 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
     public FlagOption noPrePruneOption = new FlagOption("noPrePrune", 'p',
             "Disable pre-pruning.");
 
+    public MultiChoiceOption scoringTypeOption = new MultiChoiceOption("scoringType", '+',
+            "Determines the scoring operator for features.", new String[]{"HEIGHT", "MDI"},
+            new String[]{"HEIGHT", "MDI"}, 0);
+
     public static class FoundNode {
 
         public Node node;
@@ -929,11 +933,17 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
 
     @Override
     public double[] getFeatureScores() {
-        int maxDepth = this.measureTreeDepth();
-        double scores[] = new double[header.numAttributes() - 1];
-        obtainScore(treeRoot, 0, maxDepth, scores);
-        if(Utils.sum(scores) > 0.0) Utils.normalize(scores);
-        return scores;
+
+        if(scoringTypeOption.getChosenLabel().equalsIgnoreCase("HEIGHT")) {
+
+            int maxDepth = this.measureTreeDepth();
+            double scores[] = new double[header.numAttributes() - 1];
+            obtainScore(treeRoot, 0, maxDepth, scores);
+            if (Utils.sum(scores) > 0.0) Utils.normalize(scores);
+            return scores;
+        }else{
+            mdi();
+        }
     }
 
     public void obtainScore(Node n, int cDepth, int maxDepth, double scores[]){
