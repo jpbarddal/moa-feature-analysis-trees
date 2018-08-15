@@ -258,6 +258,8 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
 
         protected AutoExpandVector<Node> children; // = new AutoExpandVector<Node>();
 
+        protected double merit;
+
         @Override
         public int calcByteSize() {
             return super.calcByteSize()
@@ -276,17 +278,19 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
         }
 
         public SplitNode(InstanceConditionalTest splitTest,
-                double[] classObservations, int size) {
+                double[] classObservations, int size, double merit) {
             super(classObservations);
             this.splitTest = splitTest;
             this.children = new AutoExpandVector<Node>(size);
+            this.merit = merit;
         }
         
         public SplitNode(InstanceConditionalTest splitTest,
-                double[] classObservations) {
+                double[] classObservations, double merit) {
             super(classObservations);
             this.splitTest = splitTest;
             this.children = new AutoExpandVector<Node>();
+            this.merit = merit;
         }
 
 
@@ -610,13 +614,13 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
 
     //Procedure added for Hoeffding Adaptive Trees (ADWIN)
     protected SplitNode newSplitNode(InstanceConditionalTest splitTest,
-            double[] classObservations, int size) {
-        return new SplitNode(splitTest, classObservations, size);
+            double[] classObservations, int size, double merit) {
+        return new SplitNode(splitTest, classObservations, size, merit);
     }
     
     protected SplitNode newSplitNode(InstanceConditionalTest splitTest,
-            double[] classObservations) {
-        return new SplitNode(splitTest, classObservations);
+            double[] classObservations, double merit) {
+        return new SplitNode(splitTest, classObservations, merit);
     }
     
 
@@ -688,7 +692,7 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
                     deactivateLearningNode(node, parent, parentIndex);
                 } else {
                     SplitNode newSplit = newSplitNode(splitDecision.splitTest,
-                            node.getObservedClassDistribution(),splitDecision.numSplits() );
+                            node.getObservedClassDistribution(),splitDecision.numSplits(), splitDecision.merit);
                     for (int i = 0; i < splitDecision.numSplits(); i++) {
                         Node newChild = newLearningNode(splitDecision.resultingClassDistributionFromSplit(i));
                         newSplit.setChild(i, newChild);
@@ -933,25 +937,38 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
 
     @Override
     public double[] getFeatureScores() {
-
+        double scores[] = new double[header.numAttributes() - 1];
         if(scoringTypeOption.getChosenLabel().equalsIgnoreCase("HEIGHT")) {
-
             int maxDepth = this.measureTreeDepth();
-            double scores[] = new double[header.numAttributes() - 1];
-            obtainScore(treeRoot, 0, maxDepth, scores);
+            obtainDepthScore(treeRoot, 0, maxDepth, scores);
             if (Utils.sum(scores) > 0.0) Utils.normalize(scores);
-            return scores;
         }else{
-            mdi();
+            obtainMDIScore(treeRoot, scores);
+        }
+        return scores;
+    }
+
+
+    public void obtainMDIScore(Node n, double scores[]){
+        if(n instanceof SplitNode){
+            int f = ((SplitNode) n).splitTest.getAttsTestDependsOn()[0];
+            double totalInstancesSeen = this.trainingWeightSeenByModel();
+            double locallyObserved = Utils.sum(n.getObservedClassDistribution());
+            double heuristic = ((SplitNode) n).merit;
+            double pJ = locallyObserved / ((double) totalInstancesSeen);
+            scores[f] += pJ * heuristic;
+            for(Node child : ((SplitNode) n).children) {
+                obtainMDIScore(child, scores);
+            }
         }
     }
 
-    public void obtainScore(Node n, int cDepth, int maxDepth, double scores[]){
+    public void obtainDepthScore(Node n, int cDepth, int maxDepth, double scores[]){
         if(n instanceof SplitNode){
             int f = ((SplitNode) n).splitTest.getAttsTestDependsOn()[0];
             scores[f] += (maxDepth - 1) - cDepth;
             for(Node child : ((SplitNode) n).children) {
-                obtainScore(child, cDepth + 1, maxDepth, scores);
+                obtainDepthScore(child, cDepth + 1, maxDepth, scores);
             }
         }
     }
