@@ -123,8 +123,8 @@ public class HoeffdingAdaptiveTree extends HoeffdingTree implements FeatureScore
         }
         
         public AdaSplitNode(InstanceConditionalTest splitTest,
-                double[] classObservations, int size) {
-            super(splitTest, classObservations, size);
+                double[] classObservations, int size, double merit) {
+            super(splitTest, classObservations, size, merit);
             this.classifierRandom = new Random(this.randomSeed);
         }
         
@@ -449,8 +449,8 @@ public class HoeffdingAdaptiveTree extends HoeffdingTree implements FeatureScore
 
    @Override
     protected SplitNode newSplitNode(InstanceConditionalTest splitTest,
-            double[] classObservations, int size) {
-        return new AdaSplitNode(splitTest, classObservations, size);
+            double[] classObservations, int size, double merit) {
+        return new AdaSplitNode(splitTest, classObservations, size, merit);
     }
    
     @Override
