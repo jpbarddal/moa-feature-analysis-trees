@@ -293,6 +293,21 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
             this.merit = merit;
         }
 
+        public SplitNode(InstanceConditionalTest splitTest,
+                         double[] classObservations, int size) {
+            super(classObservations);
+            this.splitTest = splitTest;
+            this.children = new AutoExpandVector<Node>(size);
+        }
+
+        public SplitNode(InstanceConditionalTest splitTest,
+                         double[] classObservations) {
+            super(classObservations);
+            this.splitTest = splitTest;
+            this.children = new AutoExpandVector<Node>();
+        }
+
+
 
         public int numChildren() {
             return this.children.size();
@@ -621,6 +636,17 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
     protected SplitNode newSplitNode(InstanceConditionalTest splitTest,
             double[] classObservations, double merit) {
         return new SplitNode(splitTest, classObservations, merit);
+    }
+
+    //Procedure added for Hoeffding Adaptive Trees (ADWIN)
+    protected SplitNode newSplitNode(InstanceConditionalTest splitTest,
+                                     double[] classObservations, int size) {
+        return new SplitNode(splitTest, classObservations, size);
+    }
+
+    protected SplitNode newSplitNode(InstanceConditionalTest splitTest,
+                                     double[] classObservations) {
+        return new SplitNode(splitTest, classObservations);
     }
     
 
