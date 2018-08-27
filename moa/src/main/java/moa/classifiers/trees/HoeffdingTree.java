@@ -973,7 +973,6 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
             int maxDepth = this.measureTreeDepth();
             obtainDepthScoreWithGain(treeRoot, 0, maxDepth, scores);
             if (Utils.sum(scores) > 0.0) Utils.normalize(scores);
-//            obtainMDIScore(treeRoot, scores);
         }
         return scores;
     }

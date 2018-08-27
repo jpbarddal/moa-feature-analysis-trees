@@ -477,6 +477,7 @@ public class AdaptiveRandomForest extends AbstractClassifier implements MultiCla
         double fScores[] = new double[header.numAttributes() - 1]; // except the class
         for(int i = 0; i < numTrees; i++) fScores = Utils.aggregate(fScores, this.ensemble[i].getFeatureScores());
         fScores = Utils.divide(fScores, numTrees);
+        Utils.normalize(fScores);
         return fScores;
     }
 }
