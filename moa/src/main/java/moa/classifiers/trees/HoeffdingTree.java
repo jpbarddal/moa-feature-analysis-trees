@@ -1004,7 +1004,7 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
 
 
     public void obtainDepthScoreWithGain(Node n, int cDepth, int maxDepth, double scores[]){
-        if(n instanceof SplitNode){
+        if(n instanceof SplitNode && ((SplitNode) n).merit != Double.NEGATIVE_INFINITY){
             int f = ((SplitNode) n).splitTest.getAttsTestDependsOn()[0];
             double heuristic = ((SplitNode) n).merit;
             scores[f] += ((maxDepth - 1) - cDepth) * heuristic;
