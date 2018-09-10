@@ -227,7 +227,12 @@ public class AdaptiveRandomForest extends AbstractClassifier implements MultiCla
 
     @Override
     protected Measurement[] getModelMeasurementsImpl() {
-        return null;
+        double avgTreeDepth = 0.0;
+        for (ARFBaseLearner b : ensemble){
+            avgTreeDepth += b.classifier.measureTreeDepth();
+        }
+        avgTreeDepth /= ensemble.length;
+        return new Measurement[]{new Measurement("avg. tree depth", avgTreeDepth)};
     }
 
     protected void initEnsemble(Instance instance) {
